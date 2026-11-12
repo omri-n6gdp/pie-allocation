@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pie Allocation Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#0b0e13;--card:#141821;--line:#232834;--ink:#eef2f8;--muted:#8a93a3;--faint:#586172;
+    --up:#2fd98a;--down:#ff5d6c;--accent:#5ad1ff;--gold:#ffcf4d;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1200px;margin:0 auto;padding:26px 22px 70px}
+  h1{font-weight:600;font-size:25px}h1 b{color:var(--accent)}
+  header p{color:var(--muted);font-size:13px;margin:4px 0 20px}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .layout{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start}
+  @media(max-width:920px){.layout{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+  .card h2{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--faint);margin-bottom:13px;font-weight:600}
+  textarea{width:100%;height:200px;background:#0d1118;border:1px solid var(--line);border-radius:10px;padding:11px;font-family:'IBM Plex Mono';font-size:12px;color:var(--ink);outline:none;resize:vertical}
+  textarea:focus{border-color:var(--accent)}
+  .fmt{font-size:11.5px;color:var(--faint);line-height:1.6;margin-top:8px}
+  .fmt code{color:var(--accent)}
+  label.f{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px}
+  input[type=number]{width:100%;background:#0d1118;border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--ink);font-family:'IBM Plex Mono';font-size:14px;outline:none}
+  .togrow{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--muted)}
+  .toggle{appearance:none;width:40px;height:22px;background:#1c2230;border-radius:20px;position:relative;cursor:pointer;border:1px solid var(--line)}
+  .toggle:checked{background:var(--accent)}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s}
+  .toggle:checked::after{left:20px}
+  .btn{width:100%;border:none;cursor:pointer;background:var(--accent);color:#04141c;font-family:inherit;font-weight:600;font-size:15px;padding:12px;border-radius:10px;margin-top:16px}
+  .btn:hover{background:#3bb8e0}
+  .top{display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:center;margin-bottom:18px}
+  @media(max-width:600px){.top{grid-template-columns:1fr}}
+  .donut-wrap{display:flex;flex-direction:column;align-items:center}
+  .donut-center{font-family:'IBM Plex Mono';text-align:center}
+  .seg-toggle{display:flex;background:#0d1118;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:14px;width:fit-content}
+  .seg-toggle button{border:none;background:none;color:var(--muted);padding:8px 14px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600}
+  .seg-toggle button.on{background:var(--accent);color:#04141c}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-size:10.5px;letter-spacing:0.8px;text-transform:uppercase;color:var(--faint);font-weight:600;padding:0 10px 10px}
+  th.r,td.r{text-align:right;font-family:'IBM Plex Mono'}
+  td{padding:9px 10px;border-bottom:1px solid var(--line)}
+  td .nm{font-weight:600}td .sec{font-size:11px;color:var(--faint)}
+  .drift.pos{color:var(--up)}.drift.neg{color:var(--down)}
+  .act.buy{color:var(--up);font-weight:600}.act.sell{color:var(--down);font-weight:600}
+  .summary{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+  .stat{background:#0d1118;border:1px solid var(--line);border-radius:11px;padding:13px 17px;min-width:130px}
+  .stat .l{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+  .stat .v{font-family:'IBM Plex Mono';font-size:22px;font-weight:600;margin-top:3px}
+  .secbar{display:flex;height:30px;border-radius:7px;overflow:hidden;margin:6px 0 4px;border:1px solid var(--line)}
+  .secbar div{height:100%}
+  .seclegend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:6px}
+  .seclegend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Pie <b>Allocation</b> Visualizer</h1>
+    <p>Paste your holdings, see current vs target weights, sector exposure, and the exact buys (or sells) to rebalance.</p>
+  </header>
+  <div class="layout">
+    <div>
+      <div class="card">
+        <h2>Holdings</h2>
+        <textarea id="data" spellcheck="false"></textarea>
+        <div class="fmt">One per line: <code>name, value, target%, sector</code><br>Target % and sector are optional. £/% signs are fine.</div>
+        <label class="f">New cash to invest (£)</label>
+        <input id="cash" type="number" value="500" step="50">
+        <div class="togrow"><input type="checkbox" id="sell" class="toggle"><label for="sell">allow selling to fully rebalance</label></div>
+        <button class="btn" id="go">Analyse ▸</button>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="seg-toggle" id="viewToggle"><button data-v="holding" class="on">By holding</button><button data-v="sector">By sector</button></div>
+        <div class="top">
+          <div class="donut-wrap"><div id="donut"></div></div>
+          <div class="summary" id="summary"></div>
+        </div>
+        <div id="sectorBlock"></div>
+      </div>
+      <div class="card">
+        <h2>Rebalance Plan</h2>
+        <div style="overflow-x:auto"><table id="tbl"></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const COLORS=["#5ad1ff","#2fd98a","#ffcf4d","#ff8b5d","#b07cff","#ff5d9e","#54e0c0","#6f9bff","#ffd24a","#ff7a7a","#7ee0a0","#c79bff"];
+  let view="holding", last=null;
+  const fmt=n=>"£"+n.toLocaleString("en-GB",{maximumFractionDigits:0});
+  const fmt2=n=>"£"+n.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  function parse(t){const rows=[];
+    t.split("\n").forEach(l=>{l=l.trim();if(!l||l[0]==="#")return;const p=l.split(",").map(s=>s.trim());
+      if(p.length<2)return;const val=parseFloat(p[1].replace(/[£$,]/g,""));if(!isFinite(val))return;
+      rows.push({name:p[0],value:val,target:p[2]?parseFloat(p[2].replace("%",""))||0:null,sector:p[3]||"Uncategorised"});});
+    return rows;}
+
+  function analyse(){
+    const rows=parse($("data").value);if(!rows.length){$("tbl").innerHTML="<tr><td>Paste some holdings above.</td></tr>";return;}
+    const total=rows.reduce((a,r)=>a+r.value,0);
+    const haveTargets=rows.some(r=>r.target!=null);
+    if(!haveTargets)rows.forEach(r=>r.target=100/rows.length); else rows.forEach(r=>{if(r.target==null)r.target=0;});
+    const tgtSum=rows.reduce((a,r)=>a+r.target,0)||100;
+    rows.forEach(r=>r.target=r.target/tgtSum*100); // normalise targets to 100
+    const cash=Math.max(0,+$("cash").value||0), allowSell=$("sell").checked;
+    const newTotal=total+cash;
+    rows.forEach(r=>{r.cur=r.value/total*100;r.tgtVal=r.target/100*newTotal;r.delta=r.tgtVal-r.value;r.drift=r.cur-r.target;});
+    // no-sell: distribute cash to underweight (positive delta) proportionally
+    if(!allowSell){const need=rows.filter(r=>r.delta>0).reduce((a,r)=>a+r.delta,0);
+      rows.forEach(r=>{r.action=r.delta>0&&need>0?Math.min(r.delta,r.delta/need*cash):0;});}
+    else rows.forEach(r=>r.action=r.delta);
+    rows.forEach((r,i)=>r.color=COLORS[i%COLORS.length]);
+    last={rows,total,newTotal,cash,allowSell};
+    render();
+  }
+
+  function render(){
+    if(!last)return;const {rows,total,newTotal,cash,allowSell}=last;
+    // summary
+    const maxDrift=Math.max(...rows.map(r=>Math.abs(r.drift)));
+    $("summary").innerHTML=
+      `<div class="stat"><div class="l">Portfolio</div><div class="v">${fmt(total)}</div></div>`+
+      `<div class="stat"><div class="l">After +cash</div><div class="v">${fmt(newTotal)}</div></div>`+
+      `<div class="stat"><div class="l">Holdings</div><div class="v">${rows.length}</div></div>`+
+      `<div class="stat"><div class="l">Max drift</div><div class="v" style="color:${maxDrift>5?'var(--down)':'var(--up)'}">${maxDrift.toFixed(1)}%</div></div>`;
+    // donut
+    let segs;
+    if(view==="holding")segs=rows.map(r=>({label:r.name,value:r.value,color:r.color}));
+    else{const m={};rows.forEach(r=>{m[r.sector]=m[r.sector]||{value:0};m[r.sector].value+=r.value;});
+      segs=Object.entries(m).map(([k,v],i)=>({label:k,value:v.value,color:COLORS[i%COLORS.length]}));}
+    drawDonut(segs,total);
+    drawSectors(rows,total);
+    // table
+    rows.sort((a,b)=>b.value-a.value);
+    $("tbl").innerHTML=`<thead><tr><th>Holding</th><th class="r">Value</th><th class="r">Now</th><th class="r">Target</th><th class="r">Drift</th><th class="r">${allowSell?"Rebalance":"Buy w/ cash"}</th></tr></thead><tbody>`+
+      rows.map(r=>{const act=r.action;const buy=act>=0;
+        return `<tr><td><span class="nm">${r.name}</span><div class="sec">${r.sector}</div></td>`+
+          `<td class="r">${fmt(r.value)}</td><td class="r">${r.cur.toFixed(1)}%</td><td class="r">${r.target.toFixed(1)}%</td>`+
+          `<td class="r drift ${r.drift>=0?'pos':'neg'}">${r.drift>=0?"+":""}${r.drift.toFixed(1)}%</td>`+
+          `<td class="r act ${buy?'buy':'sell'}">${Math.abs(act)<0.5?"—":(buy?"buy ":"sell ")+fmt2(Math.abs(act))}</td></tr>`;}).join("")+"</tbody>";
+  }
+
+  function drawDonut(segs,total){
+    const R=90,r=58,cx=110,cy=110;let a=-Math.PI/2;const tot=segs.reduce((s,x)=>s+x.value,0)||1;
+    let paths="";segs.forEach(s=>{const frac=s.value/tot;const a2=a+frac*2*Math.PI;
+      const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+      const xi2=cx+r*Math.cos(a2),yi2=cy+r*Math.sin(a2),xi1=cx+r*Math.cos(a),yi1=cy+r*Math.sin(a);
+      const large=frac>0.5?1:0;
+      paths+=`<path d="M${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2} L${xi2} ${yi2} A${r} ${r} 0 ${large} 0 ${xi1} ${yi1} Z" fill="${s.color}" opacity="0.92"/>`;
+      a=a2;});
+    $("donut").innerHTML=`<svg width="220" height="220" viewBox="0 0 220 220">${paths}
+      <text x="110" y="104" text-anchor="middle" fill="#8a93a3" font-size="11" font-family="IBM Plex Mono">TOTAL</text>
+      <text x="110" y="126" text-anchor="middle" fill="#eef2f8" font-size="20" font-family="IBM Plex Mono" font-weight="600">${fmt(total)}</text></svg>`;
+  }
+  function drawSectors(rows,total){
+    const m={};rows.forEach(r=>{m[r.sector]=(m[r.sector]||0)+r.value;});
+    const ents=Object.entries(m).sort((a,b)=>b[1]-a[1]);
+    const bar=ents.map((e,i)=>`<div style="width:${e[1]/total*100}%;background:${COLORS[i%COLORS.length]}"></div>`).join("");
+    const leg=ents.map((e,i)=>`<span><i style="background:${COLORS[i%COLORS.length]}"></i>${e[0]} ${(e[1]/total*100).toFixed(0)}%</span>`).join("");
+    $("sectorBlock").innerHTML=`<h2 style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--faint);margin-bottom:6px;font-weight:600">Sector exposure</h2><div class="secbar">${bar}</div><div class="seclegend">${leg}</div>`;
+  }
+
+  $("viewToggle").querySelectorAll("button").forEach(b=>b.onclick=()=>{view=b.dataset.v;
+    $("viewToggle").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));render();});
+  $("go").onclick=analyse;$("cash").oninput=()=>{if(last)analyse();};$("sell").onchange=()=>{if(last)analyse();};
+
+  $("data").value=["# name, value, target%, sector",
+    "Rocket Lab, 1200, 14, Launch","Intuitive Machines, 600, 7, Lunar","Planet Labs, 450, 6, Earth Obs",
+    "AST SpaceMobile, 800, 9, Comms","Iridium, 700, 8, Comms","Lockheed Martin, 1500, 16, Defence/Prime",
+    "Northrop Grumman, 900, 10, Defence/Prime","Boeing, 500, 5, Defence/Prime","Redwire, 300, 4, Infrastructure",
+    "Virgin Galactic, 250, 3, Tourism","Garmin, 600, 7, GNSS","Trimble, 700, 8, GNSS"].join("\n");
+  analyse();
+})();
+</script>
+</body>
+</html>
