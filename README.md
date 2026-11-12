@@ -1,5 +1,7 @@
 # Pie Allocation Visualizer
 
+**▶ Try it online: [https://omri-n6gdp.github.io/pie-allocation/](https://omri-n6gdp.github.io/pie-allocation/)** (works on phones too)
+
 Portfolio pie-allocation visualiser and rebalancing calculator, including a no-sell mode.
 
 ## How to use
